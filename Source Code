@@ -1,0 +1,84 @@
+# Mengimpor library yang dibutuhkan
+import pandas as pd
+import numpy as np
+from pandas.plotting import scatter_matrix
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+
+# Mengimpor dataset
+dataset = pd.read_csv("diabetes.csv")
+
+# Eksplorasi data
+# Melihat dimensi data
+print(dataset.shape)
+
+# Eksplorasi data
+# Melihat cuplikan data
+print(dataset.head())
+
+# Eksplorasi data
+# Melihat ringkasan statistik
+print(dataset.describe())
+
+# Eksplorasi data
+# Melihat distribusi kelas
+print(dataset.groupby('Outcome').size())
+
+# Memisahkan data menjadi fitur dan target
+X = dataset.iloc[:, :-1].values  # Semua kolom kecuali kolom terakhir
+y = dataset.iloc[:, -1].values   # Kolom terakhir
+
+# Membagi data menjadi training dan testing set
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=7, stratify=y)
+
+# Melatih model dengan berbagai algoritma
+models = []
+models.append(('LR', LogisticRegression(max_iter=200)))
+models.append(('LDA', LinearDiscriminantAnalysis()))
+models.append(('KNN', KNeighborsClassifier()))
+models.append(('CART', DecisionTreeClassifier()))
+models.append(('NB', GaussianNB()))
+models.append(('SVM', SVC()))
+
+# Evaluasi setiap model menggunakan stratified k-fold cross validation
+results = []
+names = []
+for name, model in models:
+    kfold = StratifiedKFold(n_splits=10, random_state=7, shuffle=True)
+    cv_results = cross_val_score(model, X_train, y_train, cv=kfold, scoring='accuracy')
+    results.append(cv_results)
+    names.append(name)
+    print(f"{name}: {cv_results.mean()} ({cv_results.std()})")
+
+# Membandingkan performa model
+fig = plt.figure()
+fig.suptitle('Perbandingan Algoritma')
+ax = fig.add_subplot(111)
+plt.boxplot(results)
+ax.set_xticklabels(names)
+plt.show()
+
+# Melakukan prediksi
+model = LinearDiscriminantAnalysis()
+model.fit(X_train, y_train)
+predictions = model.predict(X_test)
+
+# Mengevaluasi prediksi
+print(f"Akurasi: {accuracy_score(y_test, predictions)}")
+print ("\n")
+print("Confusion Matrix:")
+print(confusion_matrix(y_test, predictions))
+print ("\n")
+print("Classification Report:")
+print(classification_report(y_test, predictions, zero_division=1))
